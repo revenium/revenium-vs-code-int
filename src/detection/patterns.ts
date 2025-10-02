@@ -10,7 +10,17 @@ export const ONBOARDING_PATTERNS: DetectionPattern[] = [
     severity: 'INFO',
     provider: 'openai',
     scenario: 'missing_revenium',
-    fixGuidance: 'import revenium_middleware_openai_python  # Auto-patches OpenAI',
+    fixGuidance: 'from revenium_middleware_openai_python import OpenAI  # Direct replacement',
+  },
+  {
+    id: 'openai-python-client-instantiation',
+    pattern: /(\w+)\s*=\s*(?:openai\.)?(?:OpenAI|AsyncOpenAI)\s*\(/g,
+    message: 'OpenAI client instantiation detected. Wrap with Revenium for tracking.',
+    language: ['python'],
+    severity: 'INFO',
+    provider: 'openai',
+    scenario: 'missing_revenium',
+    fixGuidance: 'client = ReveniumWrapper(OpenAI())  # Wrap the client',
   },
 
   // OpenAI JavaScript/TypeScript Patterns
@@ -22,7 +32,17 @@ export const ONBOARDING_PATTERNS: DetectionPattern[] = [
     severity: 'INFO',
     provider: 'openai',
     scenario: 'missing_revenium',
-    fixGuidance: 'import { patchOpenAIInstance } from "revenium-middleware-openai-node"'
+    fixGuidance: 'import OpenAI from "revenium-middleware-openai-node"  // Direct replacement'
+  },
+  {
+    id: 'openai-js-client-instantiation',
+    pattern: /(?:const|let|var)\s+(\w+)\s*=\s*new\s+OpenAI\s*\(/g,
+    message: 'OpenAI client instantiation detected. Using Revenium wrapper for tracking.',
+    language: ['javascript', 'typescript'],
+    severity: 'INFO',
+    provider: 'openai',
+    scenario: 'missing_revenium',
+    fixGuidance: 'const client = new ReveniumOpenAI()  // Use wrapped client'
   },
   {
     id: 'openai-commonjs-require',
@@ -44,7 +64,17 @@ export const ONBOARDING_PATTERNS: DetectionPattern[] = [
     severity: 'INFO',
     provider: 'anthropic',
     scenario: 'missing_revenium',
-    fixGuidance: 'from revenium_middleware_anthropic_python import Anthropic',
+    fixGuidance: 'from revenium_middleware_anthropic_python import Anthropic  # Direct replacement',
+  },
+  {
+    id: 'anthropic-python-client-instantiation',
+    pattern: /(\w+)\s*=\s*(?:anthropic\.)?(?:Anthropic|AsyncAnthropic)\s*\(/g,
+    message: 'Anthropic client instantiation detected. Wrap with Revenium for tracking.',
+    language: ['python'],
+    severity: 'INFO',
+    provider: 'anthropic',
+    scenario: 'missing_revenium',
+    fixGuidance: 'client = ReveniumWrapper(Anthropic())  # Wrap the client',
   },
   {
     id: 'anthropic-js-import',

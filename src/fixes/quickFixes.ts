@@ -73,19 +73,70 @@ export class QuickFixProvider {
     const edit = new vscode.WorkspaceEdit();
 
     if (language === 'python') {
-      // Python uses auto-patching - just add the import after the original
-      const reveniumImport = `import ${packageName}  # Auto-patches ${provider} for Revenium tracking\n`;
-      const insertPosition = new vscode.Position(detection.range.end.line + 1, 0);
-      edit.insert(document.uri, insertPosition, reveniumImport);
-    } else if (language === 'javascript' || language === 'typescript') {
-      // Add Revenium middleware import after the AI import
-      const reveniumImport = `import { initializeReveniumFromEnv, patchOpenAI } from '${packageName}';\n`;
-      const insertPosition = new vscode.Position(detection.range.end.line + 1, 0);
-      edit.insert(document.uri, insertPosition, reveniumImport);
+      // Python: Replace the original import with Revenium wrapper
+      const originalLine = document.lineAt(detection.range.start.line).text;
 
-      // Add initialization call (patches all instances globally)
-      const initCode = `// Initialize Revenium tracking\ninitializeReveniumFromEnv();\npatchOpenAI(); // Auto-patches all OpenAI instances\n\n`;
-      edit.insert(document.uri, insertPosition, initCode);
+      // Determine the replacement based on import pattern
+      let replacement = '';
+      if (originalLine.includes('from openai import')) {
+        // Replace: from openai import OpenAI → from revenium_middleware_openai_python import OpenAI
+        replacement = originalLine.replace('from openai', `from ${packageName}`);
+      } else if (originalLine.includes('from anthropic import')) {
+        // Replace: from anthropic import Anthropic → from revenium_middleware_anthropic_python import Anthropic
+        replacement = originalLine.replace('from anthropic', `from ${packageName}`);
+      } else if (originalLine.includes('import openai')) {
+        // For simple imports, add middleware after (auto-patching approach)
+        replacement = originalLine + '\n' + `import ${packageName}  # Auto-patches ${provider}`;
+      } else if (originalLine.includes('import anthropic')) {
+        replacement = originalLine + '\n' + `import ${packageName}  # Auto-patches ${provider}`;
+      } else {
+        // Default: add auto-patching import after
+        replacement = originalLine + '\n' + `import ${packageName}  # Auto-patches ${provider}`;
+      }
+
+      const fullLineRange = new vscode.Range(
+        new vscode.Position(detection.range.start.line, 0),
+        new vscode.Position(detection.range.start.line, originalLine.length)
+      );
+      edit.replace(document.uri, fullLineRange, replacement);
+    } else if (language === 'javascript' || language === 'typescript') {
+      // JavaScript/TypeScript: Replace import or add wrapper based on pattern
+      const originalLine = document.lineAt(detection.range.start.line).text;
+
+      if (originalLine.includes('import') && originalLine.includes('openai')) {
+        // ES6 import - replace with Revenium wrapped version
+        const replacement = originalLine.replace(
+          /from\s+['"]openai['"]/g,
+          `from '${packageName}'`
+        ) + '  // Revenium-wrapped OpenAI';
+
+        const fullLineRange = new vscode.Range(
+          new vscode.Position(detection.range.start.line, 0),
+          new vscode.Position(detection.range.start.line, originalLine.length)
+        );
+        edit.replace(document.uri, fullLineRange, replacement);
+      } else if (originalLine.includes('require') && originalLine.includes('openai')) {
+        // CommonJS require - replace with Revenium wrapped version
+        const replacement = originalLine.replace(
+          /require\s*\(\s*['"]openai['"]\s*\)/g,
+          `require('${packageName}')`
+        ) + '  // Revenium-wrapped OpenAI';
+
+        const fullLineRange = new vscode.Range(
+          new vscode.Position(detection.range.start.line, 0),
+          new vscode.Position(detection.range.start.line, originalLine.length)
+        );
+        edit.replace(document.uri, fullLineRange, replacement);
+      } else {
+        // Fallback: Add patching code after import
+        const reveniumImport = `import { initializeReveniumFromEnv, patch${config.displayName.replace(/\s/g, '')} } from '${packageName}';\n`;
+        const insertPosition = new vscode.Position(detection.range.end.line + 1, 0);
+        edit.insert(document.uri, insertPosition, reveniumImport);
+
+        // Add initialization call
+        const initCode = `// Initialize Revenium tracking\ninitializeReveniumFromEnv();\npatch${config.displayName.replace(/\s/g, '')}(); // Auto-patches all instances\n\n`;
+        edit.insert(document.uri, insertPosition, initCode);
+      }
     }
 
     return {
