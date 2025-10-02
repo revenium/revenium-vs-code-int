@@ -1,0 +1,266 @@
+{
+  "name": "revenium-onboarding-assistant",
+  "displayName": "Revenium",
+  "description": "Detect AI usage in your codebase and integrate Revenium middleware for cost tracking and monitoring",
+  "version": "1.0.0",
+  "publisher": "revenium",
+  "icon": "icons/icon_1.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/revenium/revenium-onboarding-assistant.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "ai",
+    "llm",
+    "cost-tracking",
+    "monitoring",
+    "revenium",
+    "openai",
+    "anthropic",
+    "middleware",
+    "observability"
+  ],
+  "activationEvents": [
+    "onView:reveniumControl",
+    "onView:discoveredUsage",
+    "onLanguage:python",
+    "onLanguage:javascript",
+    "onLanguage:typescript"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "revenium.startDetection",
+        "title": "Start AI Detection",
+        "icon": "$(play)"
+      },
+      {
+        "command": "revenium.stopDetection",
+        "title": "Stop AI Detection",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "revenium.scanWorkspace",
+        "title": "Scan for AI Usage",
+        "icon": "$(play)"
+      },
+      {
+        "command": "revenium.stopScan",
+        "title": "Stop Scan",
+        "icon": "$(stop)"
+      },
+      {
+        "command": "revenium.generateOnboardingReport",
+        "title": "Generate Integration Report",
+        "icon": "$(file-text)"
+      },
+      {
+        "command": "revenium.fixAllIssues",
+        "title": "Apply All Integration Fixes",
+        "icon": "$(check-all)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "reveniumContainer",
+          "title": "Revenium",
+          "icon": "media/revenium-activitybar.svg"
+        }
+      ]
+    },
+    "views": {
+      "reveniumContainer": [
+        {
+          "id": "reveniumControl",
+          "name": "Revenium Configuration"
+        },
+        {
+          "id": "discoveredUsage",
+          "name": "Revenium Overview"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "revenium.startDetection",
+          "when": "view == reveniumControl && revenium.detectionActive == false",
+          "group": "navigation@1"
+        },
+        {
+          "command": "revenium.stopDetection",
+          "when": "view == reveniumControl && revenium.detectionActive == true",
+          "group": "navigation@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Revenium",
+      "properties": {
+        "revenium.detection.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI usage detection",
+          "order": 1
+        },
+        "revenium.detection.realTime": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time detection as you type",
+          "order": 2
+        },
+        "revenium.detection.showOverlays": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show visual indicators under detected AI usage",
+          "order": 3
+        },
+        "revenium.detection.filter": {
+          "type": "string",
+          "enum": [
+            "all",
+            "integration",
+            "security",
+            "imports"
+          ],
+          "enumDescriptions": [
+            "Show all detections",
+            "Show only integration opportunities",
+            "Show only security issues",
+            "Show only import statements"
+          ],
+          "default": "all",
+          "description": "Filter detection results by type",
+          "order": 4
+        },
+        "revenium.providers.openai": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect OpenAI usage",
+          "order": 10
+        },
+        "revenium.providers.anthropic": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect Anthropic usage",
+          "order": 11
+        },
+        "revenium.providers.google": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect Google AI usage",
+          "order": 12
+        },
+        "revenium.languages.python": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect AI usage in Python files",
+          "order": 20
+        },
+        "revenium.languages.javascript": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect AI usage in JavaScript files",
+          "order": 21
+        },
+        "revenium.languages.typescript": {
+          "type": "boolean",
+          "default": true,
+          "description": "Detect AI usage in TypeScript files",
+          "order": 22
+        },
+        "revenium.display.codeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show integration hints above detected AI code",
+          "order": 30
+        },
+        "revenium.advanced.patterns": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable advanced detection patterns (experimental)",
+          "order": 40
+        },
+        "revenium.detectionActive": {
+          "type": "boolean",
+          "default": true,
+          "description": "Legacy setting - use revenium.detection.enabled instead",
+          "deprecationMessage": "Use revenium.detection.enabled instead",
+          "order": 100
+        },
+        "revenium.enableRealTimeScanning": {
+          "type": "boolean",
+          "default": true,
+          "description": "Legacy setting - use revenium.detection.realTime instead",
+          "deprecationMessage": "Use revenium.detection.realTime instead",
+          "order": 101
+        },
+        "revenium.showDetectionOverlays": {
+          "type": "boolean",
+          "default": true,
+          "description": "Legacy setting - use revenium.detection.showOverlays instead",
+          "deprecationMessage": "Use revenium.detection.showOverlays instead",
+          "order": 102
+        },
+        "revenium.detectionFilter": {
+          "type": "string",
+          "enum": [
+            "all",
+            "integration",
+            "security",
+            "imports"
+          ],
+          "default": "all",
+          "description": "Legacy setting - use revenium.detection.filter instead",
+          "deprecationMessage": "Use revenium.detection.filter instead",
+          "order": 103
+        },
+        "revenium.advancedPatterns": {
+          "type": "boolean",
+          "default": false,
+          "description": "Legacy setting - use revenium.advanced.patterns instead",
+          "deprecationMessage": "Use revenium.advanced.patterns instead",
+          "order": 104
+        },
+        "revenium.showIntegrationHints": {
+          "type": "boolean",
+          "default": false,
+          "description": "Legacy setting - use revenium.display.codeLens instead",
+          "deprecationMessage": "Use revenium.display.codeLens instead",
+          "order": 105
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "test": "npm run compile && node ./out/test/runTest.js",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "openai": "^5.23.2"
+  },
+  "devDependencies": {
+    "@types/node": "18.x",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "@vscode/test-electron": "^2.2.0",
+    "@vscode/vsce": "^2.15.0",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.4"
+  }
+}
