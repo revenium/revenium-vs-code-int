@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { DetectionEngine } from '../detection/engine';
-import { CostClassifier } from '../detection/costClassifier';
-import { OnboardingReport, DetectionResult } from '../types';
+// import { CostClassifier } from '../detection/costClassifier';
+import { OnboardingReport, DetectionResult } from '../types/types';
 import { PROVIDER_CONFIGS } from '../detection/patterns';
 
 export class OnboardingReportGenerator {
@@ -46,8 +46,8 @@ export class OnboardingReportGenerator {
     const allDetections: DetectionResult[] = [];
     let criticalIssues = 0;
 
-    detections.forEach(fileDetections => {
-      fileDetections.forEach(detection => {
+    detections.forEach((fileDetections) => {
+      fileDetections.forEach((detection) => {
         allDetections.push(detection);
 
         if (detection.pattern.severity === 'ERROR' || detection.pattern.securityRisk) {
@@ -67,10 +67,10 @@ export class OnboardingReportGenerator {
         totalDetections: allDetections.length,
         criticalIssues,
         estimatedMonthlyCost: 0,
-        optimizationPotential: 0
+        optimizationPotential: 0,
       },
       detections: allDetections,
-      recommendations
+      recommendations,
     };
   }
 
@@ -79,7 +79,7 @@ export class OnboardingReportGenerator {
     const providers = new Set<string>();
     const scenarios = new Set<string>();
 
-    detections.forEach(d => {
+    detections.forEach((d) => {
       providers.add(d.pattern.provider);
       scenarios.add(d.pattern.scenario);
     });
@@ -96,7 +96,7 @@ export class OnboardingReportGenerator {
       );
     }
 
-    providers.forEach(provider => {
+    providers.forEach((provider) => {
       const config = PROVIDER_CONFIGS[provider];
       if (config && provider !== 'unknown') {
         recommendations.push(
@@ -124,7 +124,7 @@ export class OnboardingReportGenerator {
     content += `| **Security Issues** | ${summary.criticalIssues} |\n\n`;
 
     content += `## 🎯 Key Recommendations\n\n`;
-    recommendations.forEach(rec => {
+    recommendations.forEach((rec) => {
       content += `- ${rec}\n`;
     });
     content += `\n`;
@@ -142,7 +142,7 @@ export class OnboardingReportGenerator {
       groupedByFile.forEach((fileDetections, file) => {
         content += `#### 📄 ${vscode.workspace.asRelativePath(vscode.Uri.parse(file))}\n\n`;
 
-        fileDetections.forEach(detection => {
+        fileDetections.forEach((detection) => {
           const severity = this.getSeverityEmoji(detection.pattern.severity);
           content += `- ${severity} **Line ${detection.range.start.line + 1}:** ${detection.pattern.message}\n`;
 
@@ -173,12 +173,10 @@ export class OnboardingReportGenerator {
     return content;
   }
 
-  private groupDetectionsByProvider(
-    detections: DetectionResult[]
-  ): Map<string, DetectionResult[]> {
+  private groupDetectionsByProvider(detections: DetectionResult[]): Map<string, DetectionResult[]> {
     const grouped = new Map<string, DetectionResult[]>();
 
-    detections.forEach(detection => {
+    detections.forEach((detection) => {
       const provider = detection.pattern.provider;
       if (!grouped.has(provider)) {
         grouped.set(provider, []);
@@ -189,12 +187,10 @@ export class OnboardingReportGenerator {
     return grouped;
   }
 
-  private groupDetectionsByFile(
-    detections: DetectionResult[]
-  ): Map<string, DetectionResult[]> {
+  private groupDetectionsByFile(detections: DetectionResult[]): Map<string, DetectionResult[]> {
     const grouped = new Map<string, DetectionResult[]>();
 
-    detections.forEach(detection => {
+    detections.forEach((detection) => {
       const file = detection.range.start.line.toString();
       if (!grouped.has(file)) {
         grouped.set(file, []);
@@ -207,10 +203,14 @@ export class OnboardingReportGenerator {
 
   private getSeverityEmoji(severity: string): string {
     switch (severity) {
-      case 'ERROR': return '❌';
-      case 'WARNING': return '⚠️';
-      case 'INFO': return 'ℹ️';
-      default: return '•';
+      case 'ERROR':
+        return '❌';
+      case 'WARNING':
+        return '⚠️';
+      case 'INFO':
+        return 'ℹ️';
+      default:
+        return '•';
     }
   }
 }

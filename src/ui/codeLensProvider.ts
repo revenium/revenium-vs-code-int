@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { DetectionEngine } from '../detection/engine';
-import { DetectionResult } from '../types';
+import { DetectionResult } from '../types/types';
 
 export class OnboardingCodeLensProvider implements vscode.CodeLensProvider {
   private detectionEngine: DetectionEngine;
@@ -14,7 +14,7 @@ export class OnboardingCodeLensProvider implements vscode.CodeLensProvider {
 
   public provideCodeLenses(
     document: vscode.TextDocument,
-    token: vscode.CancellationToken
+    _token: vscode.CancellationToken
   ): vscode.ProviderResult<vscode.CodeLens[]> {
     if (!this.shouldProvideCodeLenses(document)) {
       return [];
@@ -30,7 +30,13 @@ export class OnboardingCodeLensProvider implements vscode.CodeLensProvider {
   }
 
   private shouldProvideCodeLenses(document: vscode.TextDocument): boolean {
-    const supportedLanguages = ['python', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact'];
+    const supportedLanguages = [
+      'python',
+      'javascript',
+      'typescript',
+      'javascriptreact',
+      'typescriptreact',
+    ];
     return supportedLanguages.includes(document.languageId) && document.uri.scheme === 'file';
   }
 
@@ -48,10 +54,11 @@ export class OnboardingCodeLensProvider implements vscode.CodeLensProvider {
 
     for (const [line, lineResults] of resultsByLine) {
       // Group all fixable scenarios together
-      const fixableResults = lineResults.filter(r =>
-        r.pattern.scenario === 'missing_revenium' ||
-        r.pattern.scenario === 'framework_usage' ||
-        r.pattern.scenario === 'async_pattern'
+      const fixableResults = lineResults.filter(
+        (r) =>
+          r.pattern.scenario === 'missing_revenium' ||
+          r.pattern.scenario === 'framework_usage' ||
+          r.pattern.scenario === 'async_pattern'
       );
 
       // Show middleware integration CodeLens for all fixable scenarios
@@ -62,9 +69,9 @@ export class OnboardingCodeLensProvider implements vscode.CodeLensProvider {
 
         const codeLens = new vscode.CodeLens(range, {
           title,
-          command: 'revenium.showQuickFix',
-          arguments: [fixableResults[0].range],
-          tooltip: 'Apply Revenium middleware for automatic usage tracking'
+          command: 'revenium.applyQuickFix',
+          arguments: [fixableResults[0]],
+          tooltip: 'Apply Revenium middleware for automatic usage tracking',
         });
 
         codeLenses.unshift(codeLens);
@@ -76,16 +83,15 @@ export class OnboardingCodeLensProvider implements vscode.CodeLensProvider {
 
   private getProviderName(provider: string): string {
     const names: Record<string, string> = {
-      'openai': 'OpenAI',
-      'anthropic': 'Anthropic',
-      'google': 'Google AI',
+      openai: 'OpenAI',
+      anthropic: 'Anthropic',
+      google: 'Google AI',
       'aws-bedrock': 'AWS Bedrock',
-      'perplexity': 'Perplexity',
-      'langchain': 'LangChain'
+      perplexity: 'Perplexity',
+      langchain: 'LangChain',
     };
     return names[provider] || provider;
   }
-
 
   public refresh(): void {
     // Debounce refresh calls to prevent infinite loops

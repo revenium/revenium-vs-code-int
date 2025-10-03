@@ -55,6 +55,7 @@ export type AIProvider =
   | 'openai'
   | 'anthropic'
   | 'google'
+  | 'vertex'
   | 'azure'
   | 'aws-bedrock'
   | 'perplexity'
@@ -63,6 +64,8 @@ export type AIProvider =
   | 'replicate'
   | 'langchain'
   | 'llamaindex'
+  | 'ollama'
+  | 'litellm'
   | 'unknown';
 
 export type DetectionScenario =

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { DetectionEngine } from '../detection/engine';
-import { PROVIDER_CONFIGS } from '../detection/patterns';
-import { CostClassifier } from '../detection/costClassifier';
+// import { PROVIDER_CONFIGS } from '../detection/patterns';
+// import { CostClassifier } from '../detection/costClassifier';
 
 export class OnboardingHoverProvider implements vscode.HoverProvider {
   private detectionEngine: DetectionEngine;
@@ -13,7 +13,7 @@ export class OnboardingHoverProvider implements vscode.HoverProvider {
   provideHover(
     document: vscode.TextDocument,
     position: vscode.Position,
-    token: vscode.CancellationToken
+    _token: vscode.CancellationToken
   ): vscode.ProviderResult<vscode.Hover> {
     const detections = this.detectionEngine.analyzeDocument(document);
 
@@ -27,6 +27,7 @@ export class OnboardingHoverProvider implements vscode.HoverProvider {
     return null;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private createHoverContent(detection: any): vscode.MarkdownString {
     const md = new vscode.MarkdownString();
     md.isTrusted = true;
@@ -42,6 +43,7 @@ export class OnboardingHoverProvider implements vscode.HoverProvider {
     return modelMatch ? modelMatch[1] : 'unknown';
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getDocumentLanguage(detection: any): string {
     if (detection.pattern.language.includes('python')) return 'python';
     if (detection.pattern.language.includes('javascript')) return 'javascript';

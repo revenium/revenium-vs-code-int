@@ -9,10 +9,7 @@ export class StatusBarProvider {
 
   constructor() {
     this.detectionEngine = new DetectionEngine();
-    this.statusBarItem = vscode.window.createStatusBarItem(
-      vscode.StatusBarAlignment.Right,
-      100
-    );
+    this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     this.statusBarItem.command = 'revenium.scanWorkspace';
     this.updateStatusBar();
   }
@@ -36,7 +33,7 @@ export class StatusBarProvider {
     this.updateStatusBar();
   }
 
-  public markFixed(count: number = 1): void {
+  public markFixed(_count: number = 1): void {
     // Method kept for compatibility but no longer tracks progress
     this.updateStatusBar();
   }
