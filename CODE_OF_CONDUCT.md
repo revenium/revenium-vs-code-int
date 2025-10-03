@@ -1,81 +1,57 @@
-# Code of Conduct
+# Contributor Covenant Code of Conduct
 
-## Our Commitment
+## Our Pledge
+We as members, contributors, and leaders pledge to make participation in our
+community a harassment-free experience for everyone, regardless of age, body
+size, visible or invisible disability, ethnicity, sex characteristics, gender
+identity and expression, level of experience, education, socio-economic status,
+nationality, personal appearance, race, caste, color, religion, or sexual
+identity and orientation.
 
-We are committed to providing a welcoming and inclusive environment for all contributors to the Revenium project, regardless of experience level, background, or identity.
+We pledge to act and interact in ways that contribute to an open, welcoming,
+diverse, inclusive, and healthy community.
 
-## Standards
+## Our Standards
+Examples of behavior that contributes to a positive environment include:
+- Demonstrating empathy and kindness toward other people
+- Being respectful of differing opinions, viewpoints, and experiences
+- Giving and gracefully accepting constructive feedback
+- Accepting responsibility and apologizing to those affected by mistakes
+- Focusing on what is best for the community
 
-### Expected Behavior
-
-- Use welcoming and inclusive language
-- Respect differing viewpoints and experiences
-- Accept constructive criticism gracefully
-- Focus on what is best for the community
-- Show empathy towards other community members
-
-### Unacceptable Behavior
-
-- Harassment, discrimination, or derogatory comments
-- Personal attacks or insults
+Examples of unacceptable behavior include:
+- The use of sexualized language or imagery, and sexual attention or advances
+- Trolling, insulting or derogatory comments, and personal or political attacks
 - Public or private harassment
-- Publishing others' private information without permission
-- Inappropriate use of sexual language or imagery
-- Other conduct that could reasonably be considered inappropriate
+- Publishing others' private information without explicit permission
+- Other conduct which could reasonably be considered inappropriate
 
-## Responsibilities
-
-Project maintainers are responsible for clarifying standards of acceptable behavior and taking appropriate corrective action in response to unacceptable behavior.
-
-Project maintainers have the right to remove, edit, or reject comments, commits, code, issues, and other contributions that do not align with this Code of Conduct.
+## Enforcement Responsibilities
+Community leaders are responsible for clarifying and enforcing our standards of
+acceptable behavior and will take appropriate and fair corrective action.
 
 ## Scope
-
-This Code of Conduct applies in all project spaces, including:
-
-- GitHub repositories
-- Issue trackers
-- Code reviews
-- Documentation
-- Community forums
-- Project-related communications
+This Code of Conduct applies within all community spaces, and also applies when
+an individual is officially representing the project in public spaces.
 
 ## Enforcement
+Instances of abusive, harassing, or otherwise unacceptable behavior may be
+reported by contacting the project team at **support@revenium.io**.
+All complaints will be reviewed and investigated promptly and fairly.
 
-Instances of unacceptable behavior may be reported by contacting the project team at conduct@revenium.io. All complaints will be reviewed and investigated promptly and fairly.
-
-Project maintainers are obligated to maintain confidentiality regarding the reporter of an incident.
+The project team is obligated to respect the privacy and security of the
+reporter of any incident.
 
 ## Enforcement Guidelines
-
-### 1. Correction
-
-**Impact**: Minor violation or misunderstanding
-
-**Consequence**: Private written warning with clarity about the violation and explanation of why the behavior was inappropriate
-
-### 2. Warning
-
-**Impact**: Violation through a single incident or series of actions
-
-**Consequence**: Warning with consequences for continued behavior. No interaction with involved parties for a specified period.
-
-### 3. Temporary Ban
-
-**Impact**: Serious violation of community standards
-
-**Consequence**: Temporary ban from all project interaction and communication for a specified period.
-
-### 4. Permanent Ban
-
-**Impact**: Pattern of violations or severe single violation
-
-**Consequence**: Permanent ban from all project interaction and communication.
+Community leaders will follow these guidelines in determining the consequences:
+1. **Correction** – Private, written warning.
+2. **Warning** – Clear and public warning of violation.
+3. **Temporary Ban** – Temporary ban from community interaction.
+4. **Permanent Ban** – Permanent removal from community interaction.
 
 ## Attribution
+This Code of Conduct is adapted from the [Contributor Covenant][homepage],
+version 2.1, available at
+<https://www.contributor-covenant.org/version/2/1/code_of_conduct.html>.
 
-This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1.
-
-## Contact
-
-For questions or concerns about this Code of Conduct, contact conduct@revenium.io.
+[homepage]: https://www.contributor-covenant.org
