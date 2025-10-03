@@ -40,14 +40,15 @@ Apply middleware integration with one click:
 
 **Before:**
 ```python
-from openai import OpenAI
-client = OpenAI()
+import openai
+client = openai.OpenAI()
 ```
 
 **After:**
 ```python
-from revenium_middleware_openai_python import OpenAI
-client = OpenAI()
+import openai
+import revenium_middleware_openai
+client = openai.OpenAI()
 ```
 
 ## Configuration

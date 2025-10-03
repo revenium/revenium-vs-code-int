@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ONBOARDING_PATTERNS } from './patterns';
-import { DetectionPattern, DetectionResult } from '../types';
+import { DetectionPattern, DetectionResult } from '../types/types';
 
 export class DetectionEngine {
   private patterns: DetectionPattern[];
@@ -15,8 +15,10 @@ export class DetectionEngine {
 
     // Check if detection is active (check new key first, fall back to old key)
     const config = vscode.workspace.getConfiguration('revenium');
-    const detectionEnabled = config.get<boolean>('detection.enabled',
-      config.get<boolean>('detectionActive', true));
+    const detectionEnabled = config.get<boolean>(
+      'detection.enabled',
+      config.get<boolean>('detectionActive', true)
+    );
     if (!detectionEnabled) {
       console.log('[Revenium DetectionEngine] Detection is disabled');
       return [];
@@ -54,10 +56,17 @@ export class DetectionEngine {
         continue;
       }
 
+      // Skip detection if middleware is already present
+      if (this.isMiddlewareAlreadyPresent(text, pattern.provider, language)) {
+        console.log('[Revenium DetectionEngine] Middleware already present for:', pattern.provider);
+        continue;
+      }
+
       console.log('[Revenium DetectionEngine] Testing pattern:', pattern.id);
 
       // Use the original pattern to preserve flags (especially global flag)
-      const regex = pattern.pattern instanceof RegExp ? pattern.pattern : new RegExp(pattern.pattern, 'g');
+      const regex =
+        pattern.pattern instanceof RegExp ? pattern.pattern : new RegExp(pattern.pattern, 'g');
       let match;
       let matchCount = 0;
 
@@ -67,7 +76,7 @@ export class DetectionEngine {
           patternId: pattern.id,
           match: match[0],
           index: match.index,
-          matchCount
+          matchCount,
         });
 
         // Prevent infinite loops with non-global regex
@@ -82,7 +91,7 @@ export class DetectionEngine {
           pattern,
           range,
           match: match[0],
-          suggestion: pattern.fixGuidance
+          suggestion: pattern.fixGuidance,
         });
       }
 
@@ -97,61 +106,65 @@ export class DetectionEngine {
 
     if (this.cache.size > 100) {
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey) {
+        this.cache.delete(firstKey);
+      }
     }
 
     return results;
   }
 
-  analyzeWorkspace(workspaceFolder: vscode.WorkspaceFolder): Promise<Map<string, DetectionResult[]>> {
-    return new Promise(async (resolve) => {
-      const results = new Map<string, DetectionResult[]>();
+  analyzeWorkspace(
+    workspaceFolder: vscode.WorkspaceFolder
+  ): Promise<Map<string, DetectionResult[]>> {
+    return new Promise((resolve) => {
+      (async () => {
+        const results = new Map<string, DetectionResult[]>();
 
-      const files = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(workspaceFolder, '**/*.{py,js,ts,jsx,tsx}'),
-        '**/node_modules/**',
-        1000
-      );
+        const files = await vscode.workspace.findFiles(
+          new vscode.RelativePattern(workspaceFolder, '**/*.{py,js,ts,jsx,tsx}'),
+          '**/node_modules/**',
+          1000
+        );
 
-      for (const file of files) {
-        try {
-          const document = await vscode.workspace.openTextDocument(file);
-          const detections = this.analyzeDocument(document);
-          if (detections.length > 0) {
-            results.set(file.toString(), detections);
+        for (const file of files) {
+          try {
+            const document = await vscode.workspace.openTextDocument(file);
+            const detections = this.analyzeDocument(document);
+            if (detections.length > 0) {
+              results.set(file.toString(), detections);
+            }
+          } catch (error) {
+            console.error(`Error analyzing ${file}:`, error);
           }
-        } catch (error) {
-          console.error(`Error analyzing ${file}:`, error);
         }
-      }
 
-      resolve(results);
+        resolve(results);
+      })();
     });
   }
 
   getPatternById(id: string): DetectionPattern | undefined {
-    return this.patterns.find(p => p.id === id);
+    return this.patterns.find((p) => p.id === id);
   }
 
   getCriticalPatterns(): DetectionPattern[] {
-    return this.patterns.filter(p =>
-      p.severity === 'ERROR' ||
-      p.securityRisk === true ||
-      p.costImpact === 'HIGH'
+    return this.patterns.filter(
+      (p) => p.severity === 'ERROR' || p.securityRisk === true || p.costImpact === 'HIGH'
     );
   }
 
   getProviderPatterns(provider: string): DetectionPattern[] {
-    return this.patterns.filter(p => p.provider === provider);
+    return this.patterns.filter((p) => p.provider === provider);
   }
 
   private mapLanguageId(languageId: string): string {
     const languageMap: Record<string, string> = {
-      'python': 'python',
-      'javascript': 'javascript',
-      'typescript': 'typescript',
-      'javascriptreact': 'javascript',
-      'typescriptreact': 'typescript'
+      python: 'python',
+      javascript: 'javascript',
+      typescript: 'typescript',
+      javascriptreact: 'javascript',
+      typescriptreact: 'typescript',
     };
     return languageMap[languageId] || 'unknown';
   }
@@ -160,16 +173,21 @@ export class DetectionEngine {
     this.cache.clear();
   }
 
-  private filterResults(results: DetectionResult[], config: vscode.WorkspaceConfiguration): DetectionResult[] {
+  private filterResults(
+    results: DetectionResult[],
+    config: vscode.WorkspaceConfiguration
+  ): DetectionResult[] {
     // Check new key first, fall back to old key
-    const detectionFilter = config.get<string>('detection.filter',
-      config.get<string>('detectionFilter', 'all'));
+    const detectionFilter = config.get<string>(
+      'detection.filter',
+      config.get<string>('detectionFilter', 'all')
+    );
 
     if (detectionFilter === 'all') {
       return results;
     }
 
-    return results.filter(result => {
+    return results.filter((result) => {
       switch (detectionFilter) {
         case 'integration':
           return result.pattern.scenario === 'missing_revenium';
@@ -182,5 +200,71 @@ export class DetectionEngine {
           return true;
       }
     });
+  }
+
+  private isMiddlewareAlreadyPresent(text: string, provider: string, language: string): boolean {
+    // Import the provider configs to get the correct middleware package name
+    const { PROVIDER_CONFIGS } = require('./patterns');
+    const config = PROVIDER_CONFIGS[provider];
+
+    if (!config || !config.middlewarePackages) {
+      return false;
+    }
+
+    const middlewarePackage = config.middlewarePackages[language];
+    if (!middlewarePackage) {
+      return false;
+    }
+
+    // Check if the middleware import is already present in the text
+    if (language === 'python') {
+      // Check for: import revenium_middleware_openai
+      const middlewareImportPattern = new RegExp(
+        `^\\s*import\\s+${middlewarePackage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`,
+        'm'
+      );
+      const hasMiddlewareImport = middlewareImportPattern.test(text);
+
+      console.log('[Revenium DetectionEngine] Checking middleware presence:', {
+        provider,
+        middlewarePackage,
+        hasMiddlewareImport,
+        pattern: middlewareImportPattern.source,
+      });
+
+      return hasMiddlewareImport;
+    } else if (language === 'javascript' || language === 'typescript') {
+      // Check for both patterns:
+      // import ... from 'revenium-middleware-openai-node' (OpenAI)
+      // import 'revenium-middleware-anthropic-node' (Anthropic, LiteLLM)
+      // import ... from '@revenium/google' (Google)
+      const escapedPackage = middlewarePackage.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const middlewareFromPattern = new RegExp(`from\\s+['"]${escapedPackage}['"]`, 'm');
+      const middlewareDirectPattern = new RegExp(`import\\s+['"]${escapedPackage}['"]`, 'm');
+      // Also check for destructured imports like: import { GoogleAiReveniumMiddleware } from '@revenium/google'
+      const middlewareDestructuredPattern = new RegExp(
+        `import\\s+\\{[^}]*\\}\\s+from\\s+['"]${escapedPackage}['"]`,
+        'm'
+      );
+
+      const hasFromImport = middlewareFromPattern.test(text);
+      const hasDirectImport = middlewareDirectPattern.test(text);
+      const hasDestructuredImport = middlewareDestructuredPattern.test(text);
+
+      console.log('[Revenium DetectionEngine] Checking JS/TS middleware presence:', {
+        provider,
+        middlewarePackage,
+        hasFromImport,
+        hasDirectImport,
+        hasDestructuredImport,
+        fromPattern: middlewareFromPattern.source,
+        directPattern: middlewareDirectPattern.source,
+        destructuredPattern: middlewareDestructuredPattern.source,
+      });
+
+      return hasFromImport || hasDirectImport || hasDestructuredImport;
+    }
+
+    return false;
   }
 }

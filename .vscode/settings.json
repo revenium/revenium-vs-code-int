@@ -16,7 +16,7 @@
   "revenium.detectionActive": true,
   "revenium.operationMode": "guide",
   "revenium.patterns.openai.enabled": true,
-  "revenium.patterns.anthropic.enabled": false,
+  "revenium.patterns.anthropic.enabled": true,
   "revenium.patterns.google.enabled": false,
   "revenium.integrations.middleware.enabled": true,
   "revenium.integrations.async.enabled": false,

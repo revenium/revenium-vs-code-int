@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { DetectionEngine } from '../detection/engine';
-import { DetectionResult, IntegrationProgress } from '../types';
+import { DetectionResult } from '../types/types';
 import { PROVIDER_CONFIGS } from '../detection/patterns';
 
 export class IntegrationTreeProvider implements vscode.TreeDataProvider<IntegrationItem> {
@@ -41,7 +41,7 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
       {
         location: vscode.ProgressLocation.Notification,
         title: 'Scanning for AI usage...',
-        cancellable: false
+        cancellable: false,
       },
       async (progress) => {
         for (const folder of workspaceFolders) {
@@ -154,7 +154,7 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
     let totalDetections = 0;
 
     filteredDetections.forEach((detections, file) => {
-      const providerDetections = detections.filter(d => d.pattern.provider === provider);
+      const providerDetections = detections.filter((d) => d.pattern.provider === provider);
       if (providerDetections.length > 0) {
         filesWithProvider.add(file);
         totalDetections += providerDetections.length;
@@ -170,10 +170,10 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
     summaryItem.iconPath = new vscode.ThemeIcon('info');
     items.push(summaryItem);
 
-    filesWithProvider.forEach(file => {
+    filesWithProvider.forEach((file) => {
       const uri = vscode.Uri.parse(file);
       const detections = filteredDetections.get(file) || [];
-      const providerDetections = detections.filter(d => d.pattern.provider === provider);
+      const providerDetections = detections.filter((d) => d.pattern.provider === provider);
 
       const item = new IntegrationItem(
         vscode.workspace.asRelativePath(uri),
@@ -186,7 +186,7 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
       item.command = {
         command: 'vscode.open',
         title: 'Open File',
-        arguments: [uri]
+        arguments: [uri],
       };
       items.push(item);
     });
@@ -214,7 +214,7 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
       item.command = {
         command: 'revenium.goToDetection',
         title: 'Go to Detection',
-        arguments: [vscode.Uri.parse(file), detection.range]
+        arguments: [vscode.Uri.parse(file), detection.range],
       };
       items.push(item);
     }
@@ -225,7 +225,7 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
   private getLanguageGroups(): IntegrationItem[] {
     const items: IntegrationItem[] = [];
     const filteredDetections = this.getFilteredDetections();
-    const languageData = new Map<string, { files: Set<string>, detectionCount: number }>();
+    const languageData = new Map<string, { files: Set<string>; detectionCount: number }>();
 
     // Group files by language and count detections
     filteredDetections.forEach((detections, file) => {
@@ -240,18 +240,18 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
 
     // Create language group items
     const languageDisplayNames: Record<string, string> = {
-      'python': 'Python',
-      'javascript': 'JavaScript',
-      'typescript': 'TypeScript'
+      python: 'Python',
+      javascript: 'JavaScript',
+      typescript: 'TypeScript',
     };
 
     const languageIcons: Record<string, string> = {
-      'python': 'symbol-method',
-      'javascript': 'symbol-variable',
-      'typescript': 'symbol-interface'
+      python: 'symbol-method',
+      javascript: 'symbol-variable',
+      typescript: 'symbol-interface',
     };
 
-    ['python', 'javascript', 'typescript'].forEach(language => {
+    ['python', 'javascript', 'typescript'].forEach((language) => {
       const data = languageData.get(language);
       if (data && data.files.size > 0) {
         const item = new IntegrationItem(
@@ -307,7 +307,7 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
         item.command = {
           command: 'vscode.open',
           title: 'Open File',
-          arguments: [uri]
+          arguments: [uri],
         };
         items.push(item);
       }
@@ -329,34 +329,22 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
 
   public getTotalDetections(): number {
     let total = 0;
-    this.workspaceDetections.forEach(detections => {
+    this.workspaceDetections.forEach((detections) => {
       total += detections.length;
     });
     return total;
   }
 
-  private getUniqueProviders(): string[] {
-    const providers = new Set<string>();
-    this.workspaceDetections.forEach(detections => {
-      detections.forEach(d => providers.add(d.pattern.provider));
-    });
-    return Array.from(providers);
-  }
-
-  private getProviderDetectionCount(provider: string): number {
-    let count = 0;
-    this.workspaceDetections.forEach(detections => {
-      count += detections.filter(d => d.pattern.provider === provider).length;
-    });
-    return count;
-  }
-
   private getSeverityIcon(severity: string): string {
     switch (severity) {
-      case 'ERROR': return 'error';
-      case 'WARNING': return 'warning';
-      case 'INFO': return 'info';
-      default: return 'circle-outline';
+      case 'ERROR':
+        return 'error';
+      case 'WARNING':
+        return 'warning';
+      case 'INFO':
+        return 'info';
+      default:
+        return 'circle-outline';
     }
   }
 
@@ -378,8 +366,10 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
     const filtered = new Map<string, DetectionResult[]>();
 
     // Check if detection is active globally (check new key first, fall back to old key)
-    const detectionEnabled = config.get<boolean>('detection.enabled',
-      config.get<boolean>('detectionActive', true));
+    const detectionEnabled = config.get<boolean>(
+      'detection.enabled',
+      config.get<boolean>('detectionActive', true)
+    );
     if (!detectionEnabled) {
       return filtered;
     }
@@ -394,16 +384,21 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
       }
 
       // Filter detections by provider and detection filter
-      const fileFilteredDetections = detections.filter(detection => {
+      const fileFilteredDetections = detections.filter((detection) => {
         // Check if provider is enabled
-        const providerEnabled = config.get<boolean>(`providers.${detection.pattern.provider}`, true);
+        const providerEnabled = config.get<boolean>(
+          `providers.${detection.pattern.provider}`,
+          true
+        );
         if (!providerEnabled) {
           return false;
         }
 
         // Apply detection filter (check new key first, fall back to old key)
-        const detectionFilter = config.get<string>('detection.filter',
-          config.get<string>('detectionFilter', 'all'));
+        const detectionFilter = config.get<string>(
+          'detection.filter',
+          config.get<string>('detectionFilter', 'all')
+        );
         if (detectionFilter === 'all') {
           return true;
         }
@@ -430,24 +425,29 @@ export class IntegrationTreeProvider implements vscode.TreeDataProvider<Integrat
 
   private getTotalFilteredDetections(filteredDetections: Map<string, DetectionResult[]>): number {
     let total = 0;
-    filteredDetections.forEach(detections => {
+    filteredDetections.forEach((detections) => {
       total += detections.length;
     });
     return total;
   }
 
-  private getUniqueProvidersFromFiltered(filteredDetections: Map<string, DetectionResult[]>): string[] {
+  private getUniqueProvidersFromFiltered(
+    filteredDetections: Map<string, DetectionResult[]>
+  ): string[] {
     const providers = new Set<string>();
-    filteredDetections.forEach(detections => {
-      detections.forEach(d => providers.add(d.pattern.provider));
+    filteredDetections.forEach((detections) => {
+      detections.forEach((d) => providers.add(d.pattern.provider));
     });
     return Array.from(providers);
   }
 
-  private getProviderDetectionCountFromFiltered(provider: string, filteredDetections: Map<string, DetectionResult[]>): number {
+  private getProviderDetectionCountFromFiltered(
+    provider: string,
+    filteredDetections: Map<string, DetectionResult[]>
+  ): number {
     let count = 0;
-    filteredDetections.forEach(detections => {
-      count += detections.filter(d => d.pattern.provider === provider).length;
+    filteredDetections.forEach((detections) => {
+      count += detections.filter((d) => d.pattern.provider === provider).length;
     });
     return count;
   }

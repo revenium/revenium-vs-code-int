@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { DetectionEngine } from '../detection/engine';
-import { DetectionResult } from '../types';
+import { DetectionResult } from '../types/types';
 
 export class DiagnosticsProvider {
   private diagnosticCollection: vscode.DiagnosticCollection;
@@ -17,15 +17,15 @@ export class DiagnosticsProvider {
 
   private setupEventHandlers(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
-      vscode.workspace.onDidOpenTextDocument(document => {
+      vscode.workspace.onDidOpenTextDocument((document) => {
         this.analyzeDocumentWithDiagnostics(document);
       }),
 
-      vscode.workspace.onDidChangeTextDocument(event => {
+      vscode.workspace.onDidChangeTextDocument((event) => {
         this.debounceAnalysis(event.document);
       }),
 
-      vscode.workspace.onDidCloseTextDocument(document => {
+      vscode.workspace.onDidCloseTextDocument((document) => {
         this.diagnosticCollection.delete(document.uri);
         this.clearTimeout(document.uri.toString());
       })
@@ -61,7 +61,10 @@ export class DiagnosticsProvider {
     console.log('[Revenium DiagnosticsProvider] Analyzing document:', document.fileName);
 
     if (!this.shouldAnalyze(document)) {
-      console.log('[Revenium DiagnosticsProvider] Skipping document (shouldAnalyze = false):', document.fileName);
+      console.log(
+        '[Revenium DiagnosticsProvider] Skipping document (shouldAnalyze = false):',
+        document.fileName
+      );
       return;
     }
 
@@ -70,7 +73,9 @@ export class DiagnosticsProvider {
     const showOverlays = config.get('showDetectionOverlays', true);
 
     if (!showOverlays) {
-      console.log('[Revenium DiagnosticsProvider] Detection overlays disabled, clearing diagnostics');
+      console.log(
+        '[Revenium DiagnosticsProvider] Detection overlays disabled, clearing diagnostics'
+      );
       this.diagnosticCollection.delete(document.uri);
       return;
     }
@@ -85,7 +90,7 @@ export class DiagnosticsProvider {
           pattern: result.pattern.id,
           range: `${result.range.start.line}:${result.range.start.character}-${result.range.end.line}:${result.range.end.character}`,
           match: result.match,
-          scenario: result.pattern.scenario
+          scenario: result.pattern.scenario,
         });
       }
 
@@ -98,45 +103,77 @@ export class DiagnosticsProvider {
   }
 
   private shouldAnalyze(document: vscode.TextDocument): boolean {
-    const supportedLanguages = ['python', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact'];
+    const supportedLanguages = [
+      'python',
+      'javascript',
+      'typescript',
+      'javascriptreact',
+      'typescriptreact',
+    ];
     const isFileScheme = document.uri.scheme === 'file';
 
     // Skip non-code files
     const fileName = document.uri.fsPath.toLowerCase();
     const skipFiles = [
-      'settings.json', 'package.json', 'tsconfig.json', '.gitignore',
-      'readme.md', 'changelog.md', 'license', '.env'
+      'settings.json',
+      'package.json',
+      'tsconfig.json',
+      '.gitignore',
+      'readme.md',
+      'changelog.md',
+      'license',
+      '.env',
     ];
-    const isSkipFile = skipFiles.some(skip => fileName.includes(skip));
+    const isSkipFile = skipFiles.some((skip) => fileName.includes(skip));
 
     // Skip common non-AI directories
     const skipDirs = ['node_modules', '.git', '.vscode', 'dist', 'build', 'coverage'];
-    const isSkipDir = skipDirs.some(dir => fileName.includes(`/${dir}/`) || fileName.includes(`\\${dir}\\`));
+    const isSkipDir = skipDirs.some(
+      (dir) => fileName.includes(`/${dir}/`) || fileName.includes(`\\${dir}\\`)
+    );
 
     // Only analyze if it's a supported language and might contain AI usage
     const hasAIContent = this.quickCheckForAIContent(document);
 
-    return supportedLanguages.includes(document.languageId) &&
-           isFileScheme &&
-           !isSkipFile &&
-           !isSkipDir &&
-           hasAIContent;
+    return (
+      supportedLanguages.includes(document.languageId) &&
+      isFileScheme &&
+      !isSkipFile &&
+      !isSkipDir &&
+      hasAIContent
+    );
   }
 
   private quickCheckForAIContent(document: vscode.TextDocument): boolean {
     const text = document.getText();
     const aiKeywords = [
-      'openai', 'anthropic', 'claude', 'gpt', 'completion', 'chat.completion',
-      'langchain', 'llamaindex', 'huggingface', 'transformers', 'gemini',
-      'mistral', 'cohere', 'bedrock', 'azure', 'api_key'
+      'openai',
+      'anthropic',
+      'claude',
+      'gpt',
+      'completion',
+      'chat.completion',
+      'langchain',
+      'llamaindex',
+      'huggingface',
+      'transformers',
+      'gemini',
+      'mistral',
+      'cohere',
+      'bedrock',
+      'azure',
+      'api_key',
     ];
 
     const lowerText = text.toLowerCase();
-    return aiKeywords.some(keyword => lowerText.includes(keyword));
+    return aiKeywords.some((keyword) => lowerText.includes(keyword));
   }
 
-  private convertToDiagnostics(results: DetectionResult[], document?: vscode.TextDocument): vscode.Diagnostic[] {
-    return results.map(result => {
+  private convertToDiagnostics(
+    results: DetectionResult[],
+    document?: vscode.TextDocument
+  ): vscode.Diagnostic[] {
+    return results.map((result) => {
       const diagnostic = new vscode.Diagnostic(
         result.range,
         result.pattern.message,
@@ -151,7 +188,7 @@ export class DiagnosticsProvider {
           new vscode.DiagnosticRelatedInformation(
             new vscode.Location(document.uri, result.range),
             result.pattern.fixGuidance
-          )
+          ),
         ];
       }
 

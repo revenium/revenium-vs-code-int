@@ -7,16 +7,16 @@ import { ControlTreeViewProvider } from './ui/controlTreeView';
 import { QuickFixProvider } from './fixes/quickFixes';
 import { OnboardingReportGenerator } from './reports/onboardingReport';
 import { DetectionEngine } from './detection/engine';
-import { DetectionResult } from './types';
-import { DiagnosticsProvider } from './diagnostics/provider';
-import { ReveniumCodeActionProvider } from './diagnostics/codeActionProvider';
+import { DetectionResult } from './types/types';
+// import { DiagnosticsProvider } from './diagnostics/provider';
+// import { ReveniumCodeActionProvider } from './diagnostics/codeActionProvider';
 
 let detectionEngine: DetectionEngine;
 let statusBar: StatusBarProvider;
 let treeProvider: IntegrationTreeProvider;
 let controlTreeProvider: ControlTreeViewProvider;
 let codeLensProvider: OnboardingCodeLensProvider;
-let diagnosticsProvider: DiagnosticsProvider;
+// let _diagnosticsProvider: DiagnosticsProvider;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('Revenium Onboarding Assistant is now active!');
@@ -26,9 +26,10 @@ export function activate(context: vscode.ExtensionContext) {
   treeProvider = new IntegrationTreeProvider();
   controlTreeProvider = new ControlTreeViewProvider(context);
   codeLensProvider = new OnboardingCodeLensProvider();
-  diagnosticsProvider = new DiagnosticsProvider(context);
+  // Temporarily disable diagnostics to avoid conflicts with other extensions
+  // diagnosticsProvider = new DiagnosticsProvider(context);
   const hoverProvider = new OnboardingHoverProvider();
-  const codeActionProvider = new ReveniumCodeActionProvider();
+  // const _codeActionProvider = new ReveniumCodeActionProvider();
   const reportGenerator = new OnboardingReportGenerator();
 
   // Register providers
@@ -39,7 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
         { language: 'javascript' },
         { language: 'typescript' },
         { language: 'javascriptreact' },
-        { language: 'typescriptreact' }
+        { language: 'typescriptreact' },
       ],
       codeLensProvider
     )
@@ -52,28 +53,28 @@ export function activate(context: vscode.ExtensionContext) {
         { language: 'javascript' },
         { language: 'typescript' },
         { language: 'javascriptreact' },
-        { language: 'typescriptreact' }
+        { language: 'typescriptreact' },
       ],
       hoverProvider
     )
   );
 
-  // Register code actions provider for quick fixes
-  context.subscriptions.push(
-    vscode.languages.registerCodeActionsProvider(
-      [
-        { language: 'python' },
-        { language: 'javascript' },
-        { language: 'typescript' },
-        { language: 'javascriptreact' },
-        { language: 'typescriptreact' }
-      ],
-      codeActionProvider,
-      {
-        providedCodeActionKinds: [vscode.CodeActionKind.QuickFix]
-      }
-    )
-  );
+  // Temporarily disable code actions provider to avoid conflicts
+  // context.subscriptions.push(
+  //   vscode.languages.registerCodeActionsProvider(
+  //     [
+  //       { language: 'python' },
+  //       { language: 'javascript' },
+  //       { language: 'typescript' },
+  //       { language: 'javascriptreact' },
+  //       { language: 'typescriptreact' }
+  //     ],
+  //     codeActionProvider,
+  //     {
+  //       providedCodeActionKinds: [vscode.CodeActionKind.QuickFix.append('revenium')]
+  //     }
+  //   )
+  // );
 
   // Register tree views
   vscode.window.registerTreeDataProvider('discoveredUsage', treeProvider);
@@ -106,7 +107,6 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage('AI Detection stopped');
     })
   );
-
 
   context.subscriptions.push(
     vscode.commands.registerCommand('revenium.scanWorkspace', async () => {
@@ -177,7 +177,11 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('revenium.toggleProvider', async (provider: string) => {
       const config = vscode.workspace.getConfiguration('revenium');
       const currentValue = config.get<boolean>(`providers.${provider}`, true);
-      await config.update(`providers.${provider}`, !currentValue, vscode.ConfigurationTarget.Workspace);
+      await config.update(
+        `providers.${provider}`,
+        !currentValue,
+        vscode.ConfigurationTarget.Workspace
+      );
       controlTreeProvider.refresh();
       treeProvider.refresh();
     })
@@ -199,62 +203,78 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('revenium.toggleLanguage', async (language: string) => {
       const config = vscode.workspace.getConfiguration('revenium');
       const currentValue = config.get<boolean>(`languages.${language}`, true);
-      await config.update(`languages.${language}`, !currentValue, vscode.ConfigurationTarget.Workspace);
+      await config.update(
+        `languages.${language}`,
+        !currentValue,
+        vscode.ConfigurationTarget.Workspace
+      );
       controlTreeProvider.refresh();
       treeProvider.refresh();
     })
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('revenium.applyQuickFix', async (detection: DetectionResult) => {
-      const success = await QuickFixProvider.applyQuickFix(detection);
-      if (success) {
-        statusBar.markFixed();
-        if (vscode.window.activeTextEditor) {
-          const file = vscode.window.activeTextEditor.document.uri.toString();
-          treeProvider.markAsFixed(file, detection);
-        }
-      }
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand('revenium.fixSecurityIssue', async (detection: DetectionResult) => {
-      const action = await vscode.window.showWarningMessage(
-        'This will move the API key to an environment variable. Continue?',
-        'Yes', 'No'
-      );
-
-      if (action === 'Yes') {
+    vscode.commands.registerCommand(
+      'revenium.applyQuickFix',
+      async (detection: DetectionResult) => {
         const success = await QuickFixProvider.applyQuickFix(detection);
         if (success) {
           statusBar.markFixed();
-          vscode.window.showInformationMessage('Security issue fixed! Remember to set the environment variable.');
+          if (vscode.window.activeTextEditor) {
+            const file = vscode.window.activeTextEditor.document.uri.toString();
+            treeProvider.markAsFixed(file, detection);
+          }
         }
       }
-    })
+    )
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('revenium.showCostOptimization', (detection: DetectionResult, estimate: any) => {
-      const panel = vscode.window.createWebviewPanel(
-        'costOptimization',
-        'Cost Optimization',
-        vscode.ViewColumn.Two,
-        {}
-      );
+    vscode.commands.registerCommand(
+      'revenium.fixSecurityIssue',
+      async (detection: DetectionResult) => {
+        const action = await vscode.window.showWarningMessage(
+          'This will move the API key to an environment variable. Continue?',
+          'Yes',
+          'No'
+        );
 
-      panel.webview.html = getCostOptimizationWebview(detection, estimate);
-    })
+        if (action === 'Yes') {
+          const success = await QuickFixProvider.applyQuickFix(detection);
+          if (success) {
+            statusBar.markFixed();
+            vscode.window.showInformationMessage(
+              'Security issue fixed! Remember to set the environment variable.'
+            );
+          }
+        }
+      }
+    )
   );
 
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'revenium.showCostOptimization',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (detection: DetectionResult, estimate: any) => {
+        const panel = vscode.window.createWebviewPanel(
+          'costOptimization',
+          'Cost Optimization',
+          vscode.ViewColumn.Two,
+          {}
+        );
 
+        panel.webview.html = getCostOptimizationWebview(detection, estimate);
+      }
+    )
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('revenium.fixAllIssues', async () => {
       const action = await vscode.window.showInformationMessage(
         'This will apply all available Revenium middleware integrations. Continue?',
-        'Yes', 'No'
+        'Yes',
+        'No'
       );
 
       if (action === 'Yes') {
@@ -264,17 +284,23 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('revenium.goToDetection', (uri: vscode.Uri, range: vscode.Range) => {
-      vscode.window.showTextDocument(uri, {
-        selection: range,
-        viewColumn: vscode.ViewColumn.One
-      });
-    })
+    vscode.commands.registerCommand(
+      'revenium.goToDetection',
+      (uri: vscode.Uri, range: vscode.Range) => {
+        vscode.window.showTextDocument(uri, {
+          selection: range,
+          viewColumn: vscode.ViewColumn.One,
+        });
+      }
+    )
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('revenium.showQuickFix', async (range: vscode.Range) => {
-      console.log('[Revenium Extension] showQuickFix called for range:', `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`);
+      console.log(
+        '[Revenium Extension] showQuickFix called for range:',
+        `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`
+      );
 
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
@@ -316,7 +342,7 @@ export function activate(context: vscode.ExtensionContext) {
   let refreshTimeout: NodeJS.Timeout | undefined;
 
   context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor(editor => {
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
       if (editor) {
         // Clear any pending refresh
         if (refreshTimeout) {
@@ -328,7 +354,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.workspace.onDidChangeTextDocument(event => {
+    vscode.workspace.onDidChangeTextDocument((event) => {
       if (event.document === vscode.window.activeTextEditor?.document) {
         const config = vscode.workspace.getConfiguration('revenium');
         const detectionActive = config.get('detectionActive', true);
@@ -356,11 +382,11 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Listen for configuration changes
   context.subscriptions.push(
-    vscode.workspace.onDidChangeConfiguration(event => {
+    vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('revenium')) {
         const config = vscode.workspace.getConfiguration('revenium');
         const detectionActive = config.get('detectionActive', true);
-        const showOverlays = config.get('showDetectionOverlays', true);
+        // const _showOverlays = config.get('showDetectionOverlays', true);
 
         vscode.commands.executeCommand('setContext', 'revenium.detectionActive', detectionActive);
 
@@ -375,7 +401,7 @@ export function activate(context: vscode.ExtensionContext) {
         statusBar.scanActiveDocument();
 
         // Refresh diagnostics for all open documents
-        diagnosticsProvider.refreshAllDocuments();
+        // diagnosticsProvider.refreshAllDocuments();
       }
     })
   );
@@ -418,14 +444,14 @@ async function applyAllFixes(): Promise<void> {
     {
       location: vscode.ProgressLocation.Notification,
       title: 'Applying Revenium integrations...',
-      cancellable: false
+      cancellable: false,
     },
     async (progress) => {
       for (let i = 0; i < detections.length; i++) {
         const detection = detections[i];
         progress.report({
           message: `Fixing ${i + 1} of ${detections.length}...`,
-          increment: (100 / detections.length)
+          increment: 100 / detections.length,
         });
 
         const success = await QuickFixProvider.applyQuickFix(detection);
@@ -451,7 +477,7 @@ async function countTotalDetections(): Promise<number> {
   let total = 0;
   for (const folder of workspaceFolders) {
     const results = await detectionEngine.analyzeWorkspace(folder);
-    results.forEach(detections => {
+    results.forEach((detections) => {
       total += detections.length;
     });
   }
@@ -459,6 +485,7 @@ async function countTotalDetections(): Promise<number> {
   return total;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getCostOptimizationWebview(detection: DetectionResult, estimate: any): string {
   return `
     <!DOCTYPE html>
@@ -506,20 +533,28 @@ function getCostOptimizationWebview(detection: DetectionResult, estimate: any): 
       <div class="cost-card">
         <div class="cost-amount">$${estimate.monthlyEstimate.toFixed(2)}/month</div>
         <div>Current estimated cost</div>
-        ${estimate.optimizationPotential > 0 ? `
+        ${
+          estimate.optimizationPotential > 0
+            ? `
           <div class="savings">
             Save up to $${estimate.optimizationPotential.toFixed(2)}/month
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
 
       <h2>Recommendation</h2>
       <p>${detection.pattern.message}</p>
 
-      ${detection.pattern.fixGuidance ? `
+      ${
+        detection.pattern.fixGuidance
+          ? `
         <h3>How to fix:</h3>
         <pre>${detection.pattern.fixGuidance}</pre>
-      ` : ''}
+      `
+          : ''
+      }
 
       <div style="margin-top: 30px;">
         <button onclick="applyFix()">Apply Fix</button>

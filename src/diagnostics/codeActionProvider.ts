@@ -2,16 +2,18 @@ import * as vscode from 'vscode';
 import { PROVIDER_CONFIGS } from '../detection/patterns';
 
 export class ReveniumCodeActionProvider implements vscode.CodeActionProvider {
-
   provideCodeActions(
     document: vscode.TextDocument,
     range: vscode.Range | vscode.Selection,
     context: vscode.CodeActionContext,
-    token: vscode.CancellationToken
+    _token: vscode.CancellationToken
   ): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
     console.log('[Revenium CodeActionProvider] provideCodeActions called');
     console.log('[Revenium CodeActionProvider] Document:', document.fileName);
-    console.log('[Revenium CodeActionProvider] Range:', `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`);
+    console.log(
+      '[Revenium CodeActionProvider] Range:',
+      `${range.start.line}:${range.start.character}-${range.end.line}:${range.end.character}`
+    );
     console.log('[Revenium CodeActionProvider] Context diagnostics:', context.diagnostics.length);
 
     const actions: vscode.CodeAction[] = [];
@@ -21,7 +23,7 @@ export class ReveniumCodeActionProvider implements vscode.CodeActionProvider {
         source: diagnostic.source,
         code: diagnostic.code,
         message: diagnostic.message,
-        range: `${diagnostic.range.start.line}:${diagnostic.range.start.character}-${diagnostic.range.end.line}:${diagnostic.range.end.character}`
+        range: `${diagnostic.range.start.line}:${diagnostic.range.start.character}-${diagnostic.range.end.line}:${diagnostic.range.end.character}`,
       });
 
       if (diagnostic.source === 'Revenium' && diagnostic.code) {
@@ -56,7 +58,8 @@ export class ReveniumCodeActionProvider implements vscode.CodeActionProvider {
     }
 
     // Get middleware package for this language
-    const middlewarePackage = config.middlewarePackages[language as keyof typeof config.middlewarePackages];
+    const middlewarePackage =
+      config.middlewarePackages[language as keyof typeof config.middlewarePackages];
     if (!middlewarePackage) {
       console.log('[Revenium CodeActionProvider] No middleware package for language:', language);
       return undefined;
@@ -72,6 +75,7 @@ export class ReveniumCodeActionProvider implements vscode.CodeActionProvider {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getProviderConfig(patternId: string): any {
     // Map pattern IDs to provider configs
     if (patternId.includes('openai')) return PROVIDER_CONFIGS['openai'];
@@ -88,13 +92,14 @@ export class ReveniumCodeActionProvider implements vscode.CodeActionProvider {
     diagnostic: vscode.Diagnostic,
     patternId: string,
     language: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     config: any,
     middlewarePackage: string
   ): vscode.CodeAction {
     const originalText = document.getText(diagnostic.range);
     const action = new vscode.CodeAction(
-      `Add ${config.displayName} Revenium middleware (auto-patches all instances)`,
-      vscode.CodeActionKind.QuickFix
+      `Add ${config.displayName} Revenium middleware`,
+      vscode.CodeActionKind.QuickFix.append('revenium')
     );
     action.diagnostics = [diagnostic];
     action.isPreferred = true;
@@ -103,27 +108,59 @@ export class ReveniumCodeActionProvider implements vscode.CodeActionProvider {
 
     if (language === 'python') {
       // Python: Replace import with Revenium wrapper
-      return this.createPythonReplaceAction(document, diagnostic, originalText, middlewarePackage, config);
+      return this.createPythonReplaceAction(
+        document,
+        diagnostic,
+        originalText,
+        middlewarePackage,
+        config
+      );
     } else if (language === 'javascript' || language === 'typescript') {
       // JavaScript/TypeScript: Add initialization code before original import
       const isRequire = patternId.includes('require');
       const insertPosition = new vscode.Position(diagnostic.range.start.line, 0);
 
       if (isRequire) {
-        const reveniumCode = `const { initializeReveniumFromEnv, patch${config.displayName.replace(/\s/g, '')} } = require('${middlewarePackage}');
+        let reveniumCode = '';
+        if (middlewarePackage.includes('openai-node')) {
+          reveniumCode = `const { initializeReveniumFromEnv, patchOpenAIInstance } = require('${middlewarePackage}');
 // Initialize Revenium tracking
 initializeReveniumFromEnv();
-patch${config.displayName.replace(/\s/g, '')}(); // Auto-patches all ${config.displayName} instances
+patchOpenAIInstance(); // Auto-patches all OpenAI instances
 
 `;
+        } else if (middlewarePackage.includes('anthropic-node')) {
+          reveniumCode = `require('${middlewarePackage}');
+`;
+        } else if (middlewarePackage.includes('litellm-node')) {
+          reveniumCode = `require('dotenv/config');
+require('${middlewarePackage}');
+`;
+        } else {
+          reveniumCode = `require('${middlewarePackage}');
+`;
+        }
         edit.insert(document.uri, insertPosition, reveniumCode);
       } else {
-        const reveniumCode = `import { initializeReveniumFromEnv, patch${config.displayName.replace(/\s/g, '')} } from '${middlewarePackage}';
+        let reveniumCode = '';
+        if (middlewarePackage.includes('openai-node')) {
+          reveniumCode = `import { initializeReveniumFromEnv, patchOpenAIInstance } from '${middlewarePackage}';
 // Initialize Revenium tracking
 initializeReveniumFromEnv();
-patch${config.displayName.replace(/\s/g, '')}(); // Auto-patches all ${config.displayName} instances
+patchOpenAIInstance(); // Auto-patches all OpenAI instances
 
 `;
+        } else if (middlewarePackage.includes('anthropic-node')) {
+          reveniumCode = `import '${middlewarePackage}';
+`;
+        } else if (middlewarePackage.includes('litellm-node')) {
+          reveniumCode = `import 'dotenv/config';
+import '${middlewarePackage}';
+`;
+        } else {
+          reveniumCode = `import '${middlewarePackage}';
+`;
+        }
         edit.insert(document.uri, insertPosition, reveniumCode);
       }
     }
@@ -134,11 +171,11 @@ patch${config.displayName.replace(/\s/g, '')}(); // Auto-patches all ${config.di
 
   private mapLanguageId(languageId: string): string {
     const mapping: { [key: string]: string } = {
-      'python': 'python',
-      'javascript': 'javascript',
-      'typescript': 'typescript',
-      'javascriptreact': 'javascript',
-      'typescriptreact': 'typescript'
+      python: 'python',
+      javascript: 'javascript',
+      typescript: 'typescript',
+      javascriptreact: 'javascript',
+      typescriptreact: 'typescript',
     };
 
     return mapping[languageId] || languageId;
@@ -147,44 +184,29 @@ patch${config.displayName.replace(/\s/g, '')}(); // Auto-patches all ${config.di
   private createPythonReplaceAction(
     document: vscode.TextDocument,
     diagnostic: vscode.Diagnostic,
-    originalText: string,
+    _originalText: string,
     middlewarePackage: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     config: any
   ): vscode.CodeAction {
-    // Replace original import with Revenium wrapper import
+    // Add Revenium middleware import (following official documentation)
     const replaceAction = new vscode.CodeAction(
-      `Replace with ${config.displayName} Revenium wrapper import`,
-      vscode.CodeActionKind.QuickFix
+      `Add ${config.displayName} Revenium middleware`,
+      vscode.CodeActionKind.QuickFix.append('revenium')
     );
     replaceAction.diagnostics = [diagnostic];
     replaceAction.isPreferred = true;
 
     const replaceEdit = new vscode.WorkspaceEdit();
 
-    // Handle different import patterns intelligently - always replace, never add
-    let replacementText = '';
-    const providerName = config.name;
+    // Follow Revenium documentation: Keep original import + add middleware import
+    // const _providerName = config.name;
 
-    // Pattern: from X import ...
-    const fromImportMatch = originalText.match(new RegExp(`from\\s+${providerName}\\s+import\\s+(.+)`, 'i'));
-    if (fromImportMatch) {
-      const imports = fromImportMatch[1].trim();
-      replacementText = `from ${middlewarePackage} import ${imports}  # Revenium auto-patching`;
-    }
-    // Pattern: import X
-    else if (originalText.match(new RegExp(`import\\s+${providerName}`, 'i'))) {
-      replacementText = `import ${middlewarePackage} as ${providerName}  # Revenium auto-patching`;
-    }
-    // Pattern: from X.Y import ...
-    else if (originalText.includes('import') && originalText.includes(providerName)) {
-      replacementText = `import ${middlewarePackage}  # Revenium auto-patching`;
-    }
-    // Fallback
-    else {
-      replacementText = `import ${middlewarePackage}  # Revenium auto-patching`;
-    }
+    // Add the middleware import on the next line (following official docs pattern)
+    const insertPosition = new vscode.Position(diagnostic.range.end.line + 1, 0);
+    const middlewareImport = `import ${middlewarePackage}\n`;
 
-    replaceEdit.replace(document.uri, diagnostic.range, replacementText);
+    replaceEdit.insert(document.uri, insertPosition, middlewareImport);
     replaceAction.edit = replaceEdit;
 
     return replaceAction;

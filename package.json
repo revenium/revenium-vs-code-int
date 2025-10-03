@@ -4,7 +4,7 @@
   "description": "Detect AI usage in your codebase and integrate Revenium middleware for cost tracking and monitoring",
   "version": "1.0.0",
   "publisher": "revenium",
-  "icon": "icons/icon_1.png",
+  "icon": "assets/icon_1.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/revenium/revenium-onboarding-assistant.git"
@@ -36,6 +36,7 @@
     "onLanguage:typescript"
   ],
   "main": "./dist/extension.js",
+
   "contributes": {
     "commands": [
       {
@@ -74,7 +75,7 @@
         {
           "id": "reveniumContainer",
           "title": "Revenium",
-          "icon": "media/revenium-activitybar.svg"
+          "icon": "assets/revenium-activitybar.svg"
         }
       ]
     },
@@ -246,7 +247,8 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "npm run compile && node ./out/test/runTest.js",
     "package": "vsce package"
   },
@@ -254,13 +256,16 @@
     "openai": "^5.23.2"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/node": "18.x",
     "@types/vscode": "^1.74.0",
-    "@typescript-eslint/eslint-plugin": "^5.45.0",
-    "@typescript-eslint/parser": "^5.45.0",
     "@vscode/test-electron": "^2.2.0",
     "@vscode/vsce": "^2.15.0",
-    "eslint": "^8.28.0",
-    "typescript": "^4.9.4"
+    "eslint": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "globals": "^15.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^4.9.4",
+    "typescript-eslint": "^8.0.0"
   }
 }
